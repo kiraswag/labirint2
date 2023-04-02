@@ -1,0 +1,166 @@
+from pygame import *
+'''Необходимые классы'''
+ 
+#класс-родитель для спрайтов
+class GameSprite(sprite.Sprite):
+   #конструктор класса
+    def __init__(self, player_image, player_x, player_y, player_speed, player_width, player_height):
+        super().__init__()
+        # каждый спрайт должен хранить свойство image - изображение
+        self.image = transform.scale(image.load(player_image), (player_width, player_height))
+       
+        # каждый спрайт должен хранить свойство rect - прямоугольник, в который он вписан
+        self.rect = self.image.get_rect()
+
+        self.rect.x = player_x
+        self.rect.y = player_y
+        self.speed = player_speed 
+ 
+    def reset(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+class Hero(GameSprite):
+    def update(self):
+        key_pressed = key.get_pressed()
+        if key_pressed[K_a] and self.rect.x > 5:
+            self.rect.x -= self.speed
+        if key_pressed[K_d] and self.rect.x < 800:
+            self.rect.x += self.speed
+        if key_pressed[K_w] and self.rect.y > 5:
+            self.rect.y -= self.speed
+        if key_pressed[K_s] and self.rect.y < 500:
+           self.rect.y += self.speed
+
+class Enemy(GameSprite):
+    def __init__(self, player_image, player_x, player_y, player_speed, player_width, player_height, bef_x, af_x):
+        self.bef_x = bef_x
+        self.af_x = af_x
+        self.image = transform.scale(image.load(player_image), (player_width, player_height))
+       
+        self.rect = self.image.get_rect()
+
+        self.rect.x = player_x
+        self.rect.y = player_y
+        self.speed = player_speed 
+    direction = 'left'
+    def dvizeny_vraga(self):
+        if self.rect.x <= self.bef_x:
+            self.direction = 'right'
+        if self.rect.x >= win_width - self.af_x:
+            self.direction = 'left'
+
+        if self.direction == 'left':
+            self.rect.x -= self.speed
+        else:
+            self.rect.x += self.speed
+
+class Princes(GameSprite):
+    direction = 'down'
+    def dvizeny_vraga(self):
+        if self.rect.y <= 35:
+            self.direction = 'up'
+        if self.rect.y >= win_height - 85:
+            self.direction = 'down'
+
+        if self.direction == 'down':
+            self.rect.y -= self.speed
+        else:
+            self.rect.y += self.speed
+
+class Wall(sprite.Sprite):
+    def __init__(self, color_1, color_2, color_3, wall_x, wall_y, wall_width, wall_height):
+        super().__init__()
+        self.color_1 = color_1
+        self.color_2 = color_2
+        self.color_3 = color_3
+        self.width = wall_width
+        self.height = wall_height
+       # картинка стены - прямоугольник нужных размеров и цвета
+       
+        self.image = Surface((self.width, self.height))
+
+        self.image.fill((color_1, color_2, color_3))
+       # каждый спрайт должен хранить свойство rect - прямоугольник
+        self.rect = self.image.get_rect()
+        self.rect.x = wall_x
+        self.rect.y = wall_y
+
+    def draw_wall(self):
+        window.blit(self.image, (self.rect.x, self.rect.y))
+
+#Игровая сцена:
+win_width = 900
+win_height = 600
+window = display.set_mode((win_width, win_height))
+display.set_caption("Maze")
+background = transform.scale(image.load("fon.jpg"), (win_width, win_height))
+ 
+#Персонажи игры:
+player = Hero('link.png', 10, 400, 4, 100, 100)
+monster = Enemy('bokoblin.png', 590, 300, 4, 100, 80, 500, 85)
+monster2 = Enemy('bokoblin_sil.png', 300, 400, 2, 100, 80, 150, 600)
+final = GameSprite('zelda.png', 420, 500, 4, 100, 100)
+heart = GameSprite('heart.png', 350, 200, 0, 50, 50)
+
+w1 = Wall(243, 252, 116, 150, 20 , 450, 10)
+w2 = Wall(243, 252, 116, 400, 150 , 10, 250)
+w3 = Wall(243, 252, 116, 300, 480, 350, 10)
+w4 = Wall(243, 252, 116, 150, 25, 10, 465)
+w5 = Wall(243, 252, 116, 400, 480, 10, 200)
+
+game = True
+finish = False
+clock = time.Clock()
+FPS = 60
+ 
+#музыка
+mixer.init()
+mixer.music.load('jungles.ogg')
+mixer.music.play()
+font.init()
+
+font = font.Font(None, 70)
+help_z = font.render('HELP', True, (155, 121, 219))
+win = font.render('U WIN', True, (255, 215, 0))
+los = font.render('U LOSE', True, (255, 215, 0))
+while game:
+   for e in event.get():
+       if e.type == QUIT:
+           game = False
+   if finish != True:
+       window.blit(background,(0, 0))
+       window.blit(help_z, (500, 500))
+       player.update()
+       player.reset()
+       monster.dvizeny_vraga()
+       monster.reset()
+       monster2.dvizeny_vraga()
+       monster2.reset()
+       #final.dvizeny_vraga()
+       final.reset()
+       heart.reset()
+   
+       w1.draw_wall()
+       w2.draw_wall()
+       w3.draw_wall()
+       w4.draw_wall()
+       w5.draw_wall()
+
+       if sprite.collide_rect(player, final):
+           print('победа')
+           window.blit(win, (450, 400))
+           finish = True
+       if  sprite.collide_rect(player, w1) or sprite.collide_rect(player, w2) or sprite.collide_rect(player, w3) or sprite.collide_rect(player, w4) or sprite.collide_rect(player, w5) or sprite.collide_rect(player, monster):
+           print('проиграл')
+           window.blit(los, (450, 400))
+           finish = True
+       if sprite.collide_rect(player, heart):
+           print('скорость  больше')
+           player.speed = 8 
+           heart.rect.x = 2000
+       if key.get_pressed()[K_x]:
+
+           player.rect.x = 10
+           player.rect.y = 400
+           finish = False
+       display.update()
+       clock.tick(FPS)
